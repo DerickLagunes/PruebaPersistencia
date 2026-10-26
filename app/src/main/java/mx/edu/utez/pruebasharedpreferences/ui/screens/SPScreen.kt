@@ -1,55 +1,82 @@
 package mx.edu.utez.pruebasharedpreferences.ui.screens
 
-import android.R
 import android.content.Context
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun SPScreen(
+    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
-    val SP = remember {
+    val sp = remember {
         context.getSharedPreferences("Juanito", Context.MODE_PRIVATE)
     }
 
-    var textoIngresado by remember {mutableStateOf("")}
+    var textoIngresado by remember { mutableStateOf("") }
     var nombreGuardado by remember {
-        mutableStateOf(SP.getString("usuario_key", "No existe") ?: "")
+        mutableStateOf(sp.getString("usuario_key", "No existe") ?: "")
     }
 
-    Column(){
-        Text(text = "Valor guardado: $nombreGuardado", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(20.dp))
-        OutlinedTextField(textoIngresado,{textoIngresado = it})
-        Spacer(Modifier.height(20.dp))
-        Row(){
-            Button({
-                if (textoIngresado.isNotBlank()){
-                    SP.edit().putString("usuario_key", textoIngresado).apply()
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            OutlinedButton(onClick = onBack) {
+                Text("← Volver al Menú")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Ejemplo SharedPreferences",
+            style = MaterialTheme.typography.headlineSmall
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "Valor guardado: $nombreGuardado",
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = textoIngresado,
+            onValueChange = { textoIngresado = it },
+            label = { Text("Escribe un valor") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = {
+                if (textoIngresado.isNotBlank()) {
+                    sp.edit().putString("usuario_key", textoIngresado).apply()
                     nombreGuardado = textoIngresado
                     textoIngresado = ""
                 }
-            }){
-                Text("Guardar en SP")
-            }
-            OutlinedTextField("",{})
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Guardar en SharedPreferences")
         }
     }
 }

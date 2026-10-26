@@ -12,28 +12,28 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import kotlinx.coroutines.flow.Flow
 
-// 1. ENTIDAD (Representa la tabla en la BD)
+// 1. ENTIDAD (Representa la tabla en la BD con ID autoincrementable)
 @Entity(tableName = "usuarios")
 data class Usuario(
-    @PrimaryKey val id: Int = 1, // Usamos ID fijo 1 para sobrescribir siempre el mismo usuario
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val nombre: String
 )
 
-// 2. DAO (Data Access Object - Las consultas SQL)
+// 2. DAO (Data Access Object - Consultas SQL)
 @Dao
 interface UsuarioDao {
-    @Query("SELECT * FROM usuarios WHERE id = 1")
-    fun getUsuario(): Flow<Usuario?>
+    @Query("SELECT * FROM usuarios")
+    fun getUsuarios(): Flow<List<Usuario>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUsuario(usuario: Usuario)
 
-    @Query("DELETE FROM usuarios WHERE id = 1")
-    suspend fun deleteUsuario()
+    @Query("DELETE FROM usuarios")
+    suspend fun deleteAllUsuarios()
 }
 
-// 3. DATABASE (La base de datos en sí)
-@Database(entities = [Usuario::class], version = 1, exportSchema = false)
+// 3. DATABASE
+@Database(entities = [Usuario::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun usuarioDao(): UsuarioDao
 
@@ -47,7 +47,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "mi_base_de_datos"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

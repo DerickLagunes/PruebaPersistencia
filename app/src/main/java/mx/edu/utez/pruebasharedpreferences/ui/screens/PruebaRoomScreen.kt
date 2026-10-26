@@ -1,24 +1,10 @@
 package mx.edu.utez.pruebasharedpreferences.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,63 +14,107 @@ import mx.edu.utez.pruebasharedpreferences.models.AppDatabase
 import mx.edu.utez.pruebasharedpreferences.models.Usuario
 
 @Composable
-fun PruebaRoomScreen() {
+fun PruebaRoomScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Instancia de la BD y DAO
     val db = remember { AppDatabase.getDatabase(context) }
     val usuarioDao = db.usuarioDao()
 
-    // Escuchamos los cambios en Room de forma reactiva mediante Flow
-    val usuarioState by usuarioDao.getUsuario().collectAsState(initial = null)
-
+    val usuarios by usuarioDao.getUsuarios().collectAsState(initial = emptyList())
     var textoIngresado by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Muestra el nombre guardado en Room
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            OutlinedButton(onClick = onBack) {
+                Text("← Volver al Menú")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
-            text = "Valor en Room: ${usuarioState?.nombre ?: "Ningún nombre guardado"}",
+            text = "Ejemplo Room (Lista)",
             style = MaterialTheme.typography.headlineSmall
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        OutlinedTextField(
-            value = textoIngresado,
-            onValueChange = { textoIngresado = it },
-            label = { Text("Escribe tu nombre") },
-            singleLine = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Guardar en Room (Operación asíncrona mediante Coroutines)
-            Button(onClick = {
-                if (textoIngresado.isNotBlank()) {
-                    coroutineScope.launch {
-                        usuarioDao.insertUsuario(Usuario(nombre = textoIngresado))
-                        textoIngresado = ""
+        OutlinedTextField(
+            value = textoIngresado,
+            onValueChange = { textoIngresado = it },
+            label = { Text("Escribe un nombre") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = {
+                    if (textoIngresado.isNotBlank()) {
+                        coroutineScope.launch {
+                            usuarioDao.insertUsuario(Usuario(nombre = textoIngresado))
+                            textoIngresado = ""
+                        }
                     }
-                }
-            }) {
+                },
+                modifier = Modifier.weight(1f)
+            ) {
                 Text("Guardar")
             }
 
-            // Borrar de Room
-            OutlinedButton(onClick = {
-                coroutineScope.launch {
-                    usuarioDao.deleteUsuario()
+            OutlinedButton(
+                onClick = {
+                    coroutineScope.launch {
+                        usuarioDao.deleteAllUsuarios()
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Borrar Todo")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "Registros en la BD (${usuarios.size}):",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.align(Alignment.Start)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(usuarios) { usuario ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Text(
+                        text = "• ${usuario.nombre}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp)
+                    )
                 }
-            }) {
-                Text("Borrar")
             }
         }
     }
